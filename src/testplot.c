@@ -4,101 +4,183 @@
 
 #include "raylib.h"
 
-size_t get_data(double* data_vec, size_t N) {
-  static double ph = 0;
-  // ph += 0.01;
-  ph += 0.0;
+#define AXISCOLOR DARKGRAY
+#define DATACOLOR DARKBLUE
+#define MARGIN 5
+#define AXIS_THICKNESS 3.0
+#define FONTSIZE_DIV 60
 
-  for (size_t i=0; i<N; i++) {
-    data_vec[i] = sin(2*(22/7)*0.05 * (double)i + ph);
+size_t axis_ticks(float max, float min, float** ticks) {
+  float scalar = max - min;
+  size_t N = 11;
+
+  float shift = -min / scalar;
+
+  *ticks = (float*)malloc(N * sizeof(float));
+  for (int i=0; i<N; i++) {
+    *(*ticks + N - i - 1) = (float)i/(float)(N-1); // N-1 due to the fence posting
+    *(*ticks + N - i - 1) -= shift;
+    *(*ticks + N - i - 1) *= scalar;
   }
 
   return N;
 }
 
+typedef struct Axis {
+  Vector2 start;
+  Vector2 end;
+} Axis;
+
+size_t get_data(double* x_vec, double* y_vec, size_t N) {
+  static double ph = 0;
+  ph += 0.002;
+  for (size_t i=0; i<N; i++) {
+    x_vec[i] = (double)i;
+    y_vec[i] = sin(2*(22/7)*0.05 * (double)i + ph);
+  }
+  return N;
+}
+
+void get_maxmin(double *data_vec, size_t N, double *max, double *min) {
+  *max = -INFINITY;
+  *min = INFINITY;
+  for (size_t i=0; i<N; i++) {
+    if (data_vec[i] > *max) *max = data_vec[i];
+    if (data_vec[i] < *min) *min = data_vec[i];
+  }
+}
+
 double return_max(double *data_vec, size_t N) {
   double max = -INFINITY;
   for (size_t i=0; i<N; i++) {
-    if (data_vec[i] > max) {
-      max = data_vec[i];
-    }
+    if (data_vec[i] > max) max = data_vec[i];
   }
-
   return max;
 }
 
 double return_min(double *data_vec, size_t N) {
   double min = INFINITY;
   for (size_t i=0; i<N; i++) {
-    if (data_vec[i] < min) {
-      min = data_vec[i];
-    }
+    if (data_vec[i] < min) min = data_vec[i];
   }
-
   return min;
 }
 
 int main(void) {
+  size_t N = 100;
+  double *x_vec = (double*)malloc(sizeof(double) * N);
+  double *y_vec = (double*)malloc(sizeof(double) * N);
+  float* ticks = 0;
+  
   int window_width = 800;
   int window_height = 600;
-  size_t N = 100;
-  double *data_vec = (double*)malloc(sizeof(double) * N);
-  
-  InitWindow(window_width, window_height, "A test");
+  InitWindow(window_width, window_height, "Plotting with a game engine");
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   SetTargetFPS(60);
 
   while (!WindowShouldClose()) {
-    N = get_data(data_vec, N);
+    N = get_data(x_vec, y_vec, N);
     window_width = GetScreenWidth();
     window_height = GetScreenHeight();
 
-    double max = return_max(data_vec, N);
-    double min = return_min(data_vec, N);
-    double span = max - min;
+    Rectangle view_area = {
+      .x = 0.0f + MARGIN,
+      .y = 0.0f + MARGIN,
+      .width = (float)window_width - 2.0f * MARGIN,
+      .height = (float)window_height - 2.0f * MARGIN,
+    };
+
+    double y_max, y_min, x_max, x_min;
+    get_maxmin(x_vec, N, &x_max, &x_min);
+    get_maxmin(y_vec, N, &y_max, &y_min);
+    double x_span = x_max - x_min;
+    double y_span = y_max - y_min;
+
+    float zero_y = (float) (view_area.y - (view_area.height * y_min/y_span));
+    float zero_x = (float) (view_area.x + (view_area.width * x_min/x_span));
+    Axis x_axis = {
+      .start = (Vector2){ view_area.x, zero_y},
+      .end = (Vector2){ view_area.x + view_area.width, zero_y},
+    };
+    Axis y_axis = {
+      .start = (Vector2){ zero_x, view_area.y},
+      .end = (Vector2){ zero_x, view_area.y + view_area.height},
+    };
 
     BeginDrawing();
       ClearBackground(WHITE);
-      // Vector2 startPos, endPos;
-      Vector2 startXaxis = {
-        .x = 0,
-        .y = (float)(-min/span*window_height)
-      };
-      Vector2 endXaxis = {
-        .x = (float)window_width,
-        .y = startXaxis.y
-      };
-      // Draw the x axis
-      DrawLineEx(startXaxis, endXaxis, 3.0, BLACK);
-      for (size_t i=0; i<N; i+=10) {
-        Vector2 tick_start = {
-          .x = (float)(i * (size_t)window_width/N),
-          .y = startXaxis.y
-        };
-        Vector2 tick_end = {
-          .x = tick_start.x,
-          .y = tick_start.y + (float)(window_height/100)
-        };
-        DrawLineEx(tick_start, tick_end, 3.0, BLACK);
-      }
+      
+      DrawRectangleLinesEx(view_area, 1, RED);
 
-      // Draw the data
-      for (size_t i=0; i<N; i++) {
-        int endPosX = (int)(i) * window_width/(int)N;
-        int endPosY = (int)((data_vec[i] - min)/span * window_height);
+      // Ensure nothing is drawn outside the data window
+      // BeginScissorMode(
+      //     (int)view_area.x, (int)view_area.y,
+      //     (int)view_area.width, (int)view_area.height
+      //   );
+        // Draw the axes
+        DrawLineEx(x_axis.start, x_axis.end, AXIS_THICKNESS, AXISCOLOR);  // x axis
+        DrawLineEx(y_axis.start, y_axis.end, AXIS_THICKNESS, AXISCOLOR);  // y axis
 
-        if (i>0) {
-          int startPosX = (int)(i-1) * window_width/(int)N;
-          int startPosY = (int)((data_vec[i-1] - min)/span * window_height);
-          DrawLine(startPosX, startPosY, endPosX, endPosY, BLUE);
+        size_t num_ticks;
+        num_ticks = axis_ticks((float)x_max, (float)x_min, &ticks);
+        for (size_t i=0; i<num_ticks; i++) { // x axis ticks
+          float yloc_of_xaxis = (float) (view_area.y - (view_area.height * (0.0f + y_min)/y_span));
+          float tick_start_x = (float) (view_area.x + (view_area.width * (ticks[i] + x_min)/x_span));
+          Vector2 tick_start = {
+            .x = tick_start_x,
+            .y = yloc_of_xaxis
+          };
+          Vector2 tick_end = {
+            .x = tick_start.x,
+            .y = tick_start.y + view_area.height/100
+          };
+          DrawLineEx(tick_start, tick_end, 3.0, AXISCOLOR);
+          char buf[20];
+          sprintf(buf, "%.1f", ticks[i]);
+          int label_width = MeasureText(buf, 20);
+          DrawText(buf, (int)tick_start.x - label_width/2, (int)tick_end.y, window_width/FONTSIZE_DIV, AXISCOLOR);
         }
 
-        DrawCircle(endPosX, endPosY, 5, BLUE);
-      }
+        num_ticks = axis_ticks((float)y_max, (float)y_min, &ticks);
+        for (size_t i=0; i<num_ticks; i++) { // y axis ticks
+          if (-0.01f < ticks[i] && ticks[i] < 0.01f) continue;
+          float xloc_of_yaxis = (float) (view_area.x + (view_area.width * (0.0f + x_min)/x_span));
+          float tick_start_y = (float) (view_area.y - (view_area.height * (ticks[i] + y_min)/y_span));
+          Vector2 tick_start = {
+            .x = xloc_of_yaxis,
+            .y = tick_start_y,
+          };
+          Vector2 tick_end = {
+            .x = tick_start.x + view_area.height/100,
+            .y = tick_start.y,
+          };
+          DrawLineEx(tick_start, tick_end, 3.0, AXISCOLOR);
+          char buf[20];
+          sprintf(buf, "%.1f", ticks[i]);
+          // int label_width = MeasureText(buf, 20);
+          DrawText(buf, (int)(tick_start.x+view_area.height/50.0f), (int)tick_end.y-8, window_width/FONTSIZE_DIV, AXISCOLOR);
+        }
+
+        // Draw the data
+        for (size_t i=0; i<N; i++) {
+          int data_loc_X = (int) (view_area.x + (view_area.width * (x_vec[i] + x_min)/x_span));
+          int data_loc_Y = (int) (view_area.y - (view_area.height * (y_vec[i] + y_min)/y_span));
+
+          if (i>0) {
+            int last_data_X = (int) (view_area.x + (view_area.width * (x_vec[i-1] + x_min)/x_span));
+            int last_data_Y = (int) (view_area.y - (view_area.height * (y_vec[i-1] + y_min)/y_span));
+            DrawLine(last_data_X, last_data_Y, data_loc_X, data_loc_Y, DATACOLOR);
+          }
+
+          DrawCircle(data_loc_X, data_loc_Y, 5, DATACOLOR);
+        }
+      // EndScissorMode();
     EndDrawing();
   }
 
-  free(data_vec);
+  free(x_vec);
+  free(y_vec);
+  free(ticks);
   return 0;
 }
 
