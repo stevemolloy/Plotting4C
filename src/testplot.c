@@ -10,20 +10,48 @@
 #define AXIS_THICKNESS 3.0
 #define FONTSIZE_DIV 60
 
-size_t axis_ticks(float max, float min, float** ticks) {
-  float scalar = max - min;
-  size_t N = 11;
+size_t calculateNiceTicks(float minVal, float maxVal, float* ticks) {
+  size_t numTicks;
 
-  float shift = -min / scalar;
+  float range = maxVal - minVal;
+  if (range == 0) {
+    numTicks = 2;
+    ticks[0] = minVal - 0.5f;
+    ticks[1] = minVal + 0.5f;
+    return numTicks;
+  }
+  float exponent = floorf(log10f(range));
+  float mantissa = range / powf(10, exponent);
 
-  *ticks = (float*)malloc(N * sizeof(float));
-  for (int i=0; i<N; i++) {
-    *(*ticks + N - i - 1) = (float)i/(float)(N-1); // N-1 due to the fence posting
-    *(*ticks + N - i - 1) -= shift;
-    *(*ticks + N - i - 1) *= scalar;
+  // Determine the number of ticks based on the mantissa
+  float niceTickInterval;
+  if (mantissa <= 1.5) {
+    numTicks = 11;
+    niceTickInterval = 0.15f * powf(10, exponent);
+  } else if (mantissa <= 2.0) {
+    numTicks = 9;
+    niceTickInterval = 0.25f * powf(10, exponent);
+  } else if (mantissa <= 4.0) {
+    numTicks = 9;
+    niceTickInterval = 0.5f * powf(10, exponent);
+  } else if (mantissa <= 5.0) {
+    numTicks = 11;
+    niceTickInterval = 0.5f * powf(10, exponent);
+  } else {
+    numTicks = 11;
+    niceTickInterval = 1.0f * powf(10, exponent);
   }
 
-  return N;
+  // Populate the array with tick values
+  float startTick = floorf(minVal / niceTickInterval) * niceTickInterval;
+  for (int i = 0; i < numTicks; i++) {
+    ticks[i] = startTick + (float)i * niceTickInterval;
+  }
+
+  // Clear up any excess at the end
+  while (ticks[numTicks - 2] > maxVal) --numTicks;
+
+  return numTicks;
 }
 
 typedef struct Axis {
@@ -70,7 +98,7 @@ int main(void) {
   size_t N = 100;
   double *x_vec = (double*)malloc(sizeof(double) * N);
   double *y_vec = (double*)malloc(sizeof(double) * N);
-  float* ticks = 0;
+  float* ticks = (float*)malloc(15 * sizeof(float)); // Maximum of 15 ticks
   
   int window_width = 800;
   int window_height = 600;
@@ -122,7 +150,7 @@ int main(void) {
         DrawLineEx(y_axis.start, y_axis.end, AXIS_THICKNESS, AXISCOLOR);  // y axis
 
         size_t num_ticks;
-        num_ticks = axis_ticks((float)x_max, (float)x_min, &ticks);
+        num_ticks = calculateNiceTicks((float)x_min, (float)x_max, ticks);
         for (size_t i=0; i<num_ticks; i++) { // x axis ticks
           float yloc_of_xaxis = (float) (view_area.y - (view_area.height * (0.0f + y_min)/y_span));
           float tick_start_x = (float) (view_area.x + (view_area.width * (ticks[i] + x_min)/x_span));
@@ -141,7 +169,7 @@ int main(void) {
           DrawText(buf, (int)tick_start.x - label_width/2, (int)tick_end.y, window_width/FONTSIZE_DIV, AXISCOLOR);
         }
 
-        num_ticks = axis_ticks((float)y_max, (float)y_min, &ticks);
+        num_ticks = calculateNiceTicks((float)y_min, (float)y_max, ticks);
         for (size_t i=0; i<num_ticks; i++) { // y axis ticks
           if (-0.01f < ticks[i] && ticks[i] < 0.01f) continue;
           float xloc_of_yaxis = (float) (view_area.x + (view_area.width * (0.0f + x_min)/x_span));
