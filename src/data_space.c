@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include "data_space.h"
 #include "view_area.h"
 #include "raylib.h"
+
+#define FONTSIZE 25
 
 void plot_data(Data_Space ds, View_Area va, float marker_size, Color color) {
   Vector2 pts[ds.N];
@@ -20,6 +23,13 @@ void plot_data(Data_Space ds, View_Area va, float marker_size, Color color) {
 }
 
 void draw_axes(Data_Space ds, View_Area va, Color color) {
+  static bool font_loaded = false;
+  static Font font;
+  if (!font_loaded) {
+    font = LoadFontEx("fonts/NotoSans-Regular.ttf", FONTSIZE, NULL, 0);  // Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set
+    font_loaded = true;
+  }
+
   size_t num_x_ticks = ds.x_axis.num_ticks;
   Vector2 x_startPos = (Vector2) { ds.x_axis.ticks[0], 0.0f };
   Vector2 x_endPos = (Vector2) { ds.x_axis.ticks[num_x_ticks - 1], 0.0f };
@@ -42,7 +52,6 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
   DrawLineEx(y_start_win, y_end_win, AXIS_THICKNESS, color);
 
   float tick_gap = ds.x_axis.ticks[1] - ds.x_axis.ticks[0];
-  int font_size = (int)(va.width/FONTSIZE_DIV);
   for (size_t i=0; i<ds.x_axis.num_ticks; i++) { // x axis ticks
     if (ds.x_axis.ticks[i] < tick_gap * 0.25f & ds.x_axis.ticks[i] > -tick_gap * 0.25f) {
       continue;
@@ -57,8 +66,10 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
     DrawLineEx(tick_start, tick_end, 3.0, color);
     char buf[20];
     sprintf(buf, "%.1f", ds.x_axis.ticks[i]);
-    int label_width = MeasureText(buf, 20);
-    DrawText(buf, (int)tick_start.x - label_width/2, (int)tick_end.y, font_size, color);
+    Vector2 text_size = MeasureTextEx(font, buf, FONTSIZE, 0.0f);    // Measure string size for Font
+    Vector2 position = {tick_end.x - text_size.x/2, tick_end.y};
+    DrawTextEx(font, buf, position, FONTSIZE, 0.0f, color); // Draw text using font and additional parameters
+    // DrawText(buf, (int)tick_start.x - label_width/2, (int)tick_end.y, font_size, color);
   }
 
   tick_gap = ds.y_axis.ticks[1] - ds.y_axis.ticks[0];
@@ -76,7 +87,9 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
     DrawLineEx(tick_start, tick_end, 3.0, color);
     char buf[20];
     sprintf(buf, "%.2f", ds.y_axis.ticks[i]);
-    DrawText(buf, (int)tick_start.x + font_size/2, (int)tick_end.y - font_size/2, font_size, color);
+    Vector2 text_size = MeasureTextEx(font, buf, FONTSIZE, 0.0f);    // Measure string size for Font
+    Vector2 position = {tick_end.x + text_size.x/8, tick_end.y - text_size.y/2};
+    DrawTextEx(font, buf, position, FONTSIZE, 0.0f, color); // Draw text using font and additional parameters
   }
 }
 
