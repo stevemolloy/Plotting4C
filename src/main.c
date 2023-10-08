@@ -211,22 +211,6 @@ size_t get_data(float* x_vec, float* y_vec, size_t N) {
   return N;
 }
 
-float return_max(float *data_vec, size_t N) {
-  float max = -INFINITY;
-  for (size_t i=0; i<N; i++) {
-    if (data_vec[i] > max) max = data_vec[i];
-  }
-  return max;
-}
-
-float return_min(float *data_vec, size_t N) {
-  float min = INFINITY;
-  for (size_t i=0; i<N; i++) {
-    if (data_vec[i] < min) min = data_vec[i];
-  }
-  return min;
-}
-
 int main(void) {
   size_t N = 100;
   float *x_vec = (float*)malloc(sizeof(float) * N);
