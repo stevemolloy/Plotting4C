@@ -27,6 +27,9 @@ typedef struct Axis {
 } Axis;
 
 typedef struct Data_Space {
+  float *x_data;
+  float *y_data;
+  size_t N;
   float x_min;
   float y_min;
   float x_range;
@@ -52,7 +55,7 @@ Vector2 data_to_va_coords(Data_Space ds, View_Area va, Vector2 data_pt) {
   return (Vector2) { A_x*data_pt.x + B_x, va.height - (A_y*data_pt.y + B_y) };
 }
 
-Vector2 va_to_window_coords(Rectangle va, Vector2 va_vector) {
+Vector2 va_to_window_coords(View_Area va, Vector2 va_vector) {
   return (Vector2) { va_vector.x + va.x, va_vector.y + va.y };
 }
 
@@ -117,6 +120,19 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
   }
 }
 
+void plot_data(Data_Space ds, View_Area va, float marker_size, Color color) {
+  Vector2 pts[ds.N];
+  for (size_t i=0; i<ds.N; i++) {
+    Vector2 pt = (Vector2){ds.x_data[i], ds.y_data[i]};
+    Vector2 pt_in_va = data_to_va_coords(ds, va, pt);
+    pts[i] = va_to_window_coords(va, pt_in_va);
+
+    DrawCircleV(pts[i], marker_size, color);
+  }
+  DrawLineStrip(pts, (int)ds.N, color);
+
+}
+
 size_t calculateNiceTicks(float minVal, float maxVal, float* ticks) {
   size_t numTicks;
 
@@ -173,6 +189,9 @@ Data_Space new_data_space(float *x_data, float*y_data, size_t N) {
   size_t num_y_ticks = calculateNiceTicks(smallest_y, largest_y, yticks);
 
   return (Data_Space) {
+    .x_data = x_data,
+    .y_data = y_data,
+    .N = N,
     .x_min = xticks[0],
     .y_min = yticks[0],
     .x_range = xticks[num_x_ticks - 1] - xticks[0],
@@ -187,7 +206,7 @@ size_t get_data(float* x_vec, float* y_vec, size_t N) {
   ph += 0.002f;
   for (size_t i=0; i<N; i++) {
     x_vec[i] = (float)i;
-    y_vec[i] = sinf(2.0f*(22.0f/7.0f)*0.05f * (float)i + ph);
+    y_vec[i] = expf(-(float)i/50.0f) * sinf(2.0f*(22.0f/7.0f)*0.05f * (float)i + ph);
   }
   return N;
 }
@@ -212,7 +231,6 @@ int main(void) {
   size_t N = 100;
   float *x_vec = (float*)malloc(sizeof(float) * N);
   float *y_vec = (float*)malloc(sizeof(float) * N);
-  float* ticks = (float*)malloc(15 * sizeof(float)); // Maximum of 15 ticks
   
   int window_width = 800;
   int window_height = 600;
@@ -232,39 +250,17 @@ int main(void) {
       .height = (float)window_height - 2.0f * MARGIN,
     };
 
-    float y_max, y_min, x_max, x_min;
-    get_maxmin(x_vec, N, &x_max, &x_min);
-    get_maxmin(y_vec, N, &y_max, &y_min);
-    float x_span = x_max - x_min;
-    float y_span = y_max - y_min;
-
     Data_Space data_space = new_data_space(x_vec, y_vec, N);
 
     BeginDrawing();
       ClearBackground(WHITE);
-      
-      // Draw the axes
       draw_axes(data_space, view_area, AXISCOLOR);
-
-      // Draw the data
-      for (size_t i=0; i<N; i++) {
-        int data_loc_X = (int) (view_area.x + (view_area.width * (x_vec[i] + x_min)/x_span));
-        int data_loc_Y = (int) (view_area.y - (view_area.height * (y_vec[i] + y_min)/y_span));
-
-        if (i>0) {
-          int last_data_X = (int) (view_area.x + (view_area.width * (x_vec[i-1] + x_min)/x_span));
-          int last_data_Y = (int) (view_area.y - (view_area.height * (y_vec[i-1] + y_min)/y_span));
-          DrawLine(last_data_X, last_data_Y, data_loc_X, data_loc_Y, DATACOLOR);
-        }
-
-        DrawCircle(data_loc_X, data_loc_Y, 5, DATACOLOR);
-      }
+      plot_data(data_space, view_area, 3.0f, DATACOLOR);
     EndDrawing();
   }
 
   free(x_vec);
   free(y_vec);
-  free(ticks);
   return 0;
 }
 
