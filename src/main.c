@@ -14,14 +14,15 @@
 
 size_t get_data(dyn_array_float *x_data, dyn_array_float *y_data) {
   size_t N = 1024;
-  while (x_data->capacity <= N) expand_dyn_arr_float(x_data);
-  while (y_data->capacity <= N) expand_dyn_arr_float(y_data);
+  x_data->size = 0;
+  y_data->size = 0;
 
   static float ph = 0.0f;
   ph += 0.002f;
+
   for (size_t i=0; i<N; i++) {
-    x_data->vals[i] = (float)i;
-    y_data->vals[i] = expf(-(float)i/100.0f) * sinf(2.0f*PI*0.05f * (float)i + ph);
+    add_to_dyn_arr_float(x_data, (float)i);
+    add_to_dyn_arr_float(y_data, expf(-(float)i/100.0f) * sinf(2.0f*PI*0.05f * (float)i + ph));
   }
 
   return N;

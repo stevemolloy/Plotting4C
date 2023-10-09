@@ -12,6 +12,14 @@
 #define MAXTICKS 20
 #define INIT_DATA_SIZE 1024
 
+dyn_array_float new_dyn_arr_float(void) {
+  return (dyn_array_float) {
+    .vals = malloc(INIT_DATA_SIZE * sizeof(float)),
+    .size = 0,
+    .capacity = INIT_DATA_SIZE,
+  };
+}
+
 int expand_dyn_arr_float(dyn_array_float *in) {
   in->capacity *= 2;
   in->vals = (float*)realloc(in->vals, in->capacity * sizeof(float));
@@ -21,12 +29,12 @@ int expand_dyn_arr_float(dyn_array_float *in) {
   return (int)in->capacity;
 }
 
-dyn_array_float new_dyn_arr_float(void) {
-  return (dyn_array_float) {
-    .vals = malloc(INIT_DATA_SIZE * sizeof(float)),
-    .size = 0,
-    .capacity = INIT_DATA_SIZE,
-  };
+int add_to_dyn_arr_float(dyn_array_float *in, float data) {
+  if (in->size == in->capacity) {
+    expand_dyn_arr_float(in);
+  }
+  in->vals[in->size++] = data;
+  return 0;
 }
 
 void plot_data(Data_Space ds, View_Area va, float marker_size, Color color) {
