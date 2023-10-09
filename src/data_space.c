@@ -13,11 +13,11 @@
 #define INIT_DATA_SIZE 1024
 
 int expand_dyn_arr_float(dyn_array_float *in) {
-  in->vals = (float*)realloc(in->vals, 2 * in->capacity);
+  in->capacity *= 2;
+  in->vals = (float*)realloc(in->vals, in->capacity * sizeof(float));
   if (in->vals == NULL) {
     return -1;
   }
-  in->capacity *= 2;
   return (int)in->capacity;
 }
 

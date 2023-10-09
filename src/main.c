@@ -14,8 +14,8 @@
 
 size_t get_data(dyn_array_float *x_data, dyn_array_float *y_data) {
   size_t N = 1024;
-  while (x_data->capacity < N) expand_dyn_arr_float(x_data);
-  while (y_data->capacity < N) expand_dyn_arr_float(y_data);
+  while (x_data->capacity <= N) expand_dyn_arr_float(x_data);
+  while (y_data->capacity <= N) expand_dyn_arr_float(y_data);
 
   static float ph = 0.0f;
   ph += 0.002f;
