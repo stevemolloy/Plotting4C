@@ -26,7 +26,7 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
   static bool font_loaded = false;
   static Font font;
   if (!font_loaded) {
-    font = LoadFontEx("fonts/NotoSans-Regular.ttf", FONTSIZE, NULL, 0);  // Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set
+    font = LoadFontEx("fonts/NotoSans-Regular.ttf", FONTSIZE, NULL, 0);
     font_loaded = true;
   }
 

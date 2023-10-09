@@ -18,6 +18,7 @@ size_t get_data(float* x_vec, float* y_vec, size_t N) {
   for (size_t i=0; i<N; i++) {
     x_vec[i] = (float)i;
     y_vec[i] = expf(-(float)i/50.0f) * sinf(2.0f*PI*0.05f * (float)i + ph);
+    y_vec[i] += 1.0f;
   }
   return N;
 }
@@ -33,19 +34,21 @@ int main(void) {
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   SetTargetFPS(60);
 
+  Data_Space data_space;
+  View_Area view_area;
   while (!WindowShouldClose()) {
-    N = get_data(x_vec, y_vec, N);
     window_width = GetScreenWidth();
     window_height = GetScreenHeight();
 
-    View_Area view_area = {
+    view_area = (View_Area){
       .x = 0.0f + MARGIN,
       .y = 0.0f + MARGIN,
       .width = (float)window_width - 2.0f * MARGIN,
       .height = (float)window_height - 2.0f * MARGIN,
     };
 
-    Data_Space data_space = new_data_space(x_vec, y_vec, N);
+    N = get_data(x_vec, y_vec, N);
+    data_space = new_data_space(x_vec, y_vec, N);
 
     BeginDrawing();
       ClearBackground(WHITE);
