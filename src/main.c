@@ -12,21 +12,25 @@
 #define MARKERSIZE 2
 #define MARGIN 5
 
-size_t get_data(float* x_vec, float* y_vec, size_t N) {
-  static float ph = 0;
+size_t get_data(dyn_array_float *x_data, dyn_array_float *y_data) {
+  size_t N = 1024;
+  while (x_data->capacity < N) expand_dyn_arr_float(x_data);
+  while (y_data->capacity < N) expand_dyn_arr_float(y_data);
+
+  static float ph = 0.0f;
   ph += 0.002f;
   for (size_t i=0; i<N; i++) {
-    x_vec[i] = (float)i;
-    y_vec[i] = expf(-(float)i/50.0f) * sinf(2.0f*PI*0.05f * (float)i + ph);
-    y_vec[i] += 1.0f;
+    x_data->vals[i] = (float)i;
+    y_data->vals[i] = expf(-(float)i/100.0f) * sinf(2.0f*PI*0.05f * (float)i + ph);
   }
+
   return N;
 }
 
 int main(void) {
-  size_t N = 100;
-  float *x_vec = (float*)malloc(sizeof(float) * N);
-  float *y_vec = (float*)malloc(sizeof(float) * N);
+  dyn_array_float x_data = new_dyn_arr_float();
+  dyn_array_float y_data = new_dyn_arr_float();
+  size_t N;
   
   int window_width = 800;
   int window_height = 600;
@@ -47,8 +51,8 @@ int main(void) {
       .height = (float)window_height - 2.0f * MARGIN,
     };
 
-    N = get_data(x_vec, y_vec, N);
-    data_space = new_data_space(x_vec, y_vec, N);
+    N = get_data(&x_data, &y_data);
+    data_space = new_data_space(x_data, y_data, N);
 
     BeginDrawing();
       ClearBackground(WHITE);
@@ -57,8 +61,8 @@ int main(void) {
     EndDrawing();
   }
 
-  free(x_vec);
-  free(y_vec);
+  free(x_data.vals);
+  free(y_data.vals);
   return 0;
 }
 

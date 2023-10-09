@@ -2,12 +2,32 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include "data_space.h"
 #include "view_area.h"
 #include "raylib.h"
 
 #define FONTSIZE 25
+#define MAXTICKS 20
+#define INIT_DATA_SIZE 1024
+
+int expand_dyn_arr_float(dyn_array_float *in) {
+  in->vals = (float*)realloc(in->vals, 2 * in->capacity);
+  if (in->vals == NULL) {
+    return -1;
+  }
+  in->capacity *= 2;
+  return (int)in->capacity;
+}
+
+dyn_array_float new_dyn_arr_float(void) {
+  return (dyn_array_float) {
+    .vals = malloc(INIT_DATA_SIZE * sizeof(float)),
+    .size = 0,
+    .capacity = INIT_DATA_SIZE,
+  };
+}
 
 void plot_data(Data_Space ds, View_Area va, float marker_size, Color color) {
   Vector2 pts[ds.N];
@@ -19,7 +39,6 @@ void plot_data(Data_Space ds, View_Area va, float marker_size, Color color) {
     DrawCircleV(pts[i], marker_size, color);
   }
   DrawLineStrip(pts, (int)ds.N, color);
-
 }
 
 void draw_axes(Data_Space ds, View_Area va, Color color) {
@@ -66,10 +85,9 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
     DrawLineEx(tick_start, tick_end, 3.0, color);
     char buf[20];
     sprintf(buf, "%.1f", ds.x_axis.ticks[i]);
-    Vector2 text_size = MeasureTextEx(font, buf, FONTSIZE, 0.0f);    // Measure string size for Font
+    Vector2 text_size = MeasureTextEx(font, buf, FONTSIZE, 0.0f);
     Vector2 position = {tick_end.x - text_size.x/2, tick_end.y};
-    DrawTextEx(font, buf, position, FONTSIZE, 0.0f, color); // Draw text using font and additional parameters
-    // DrawText(buf, (int)tick_start.x - label_width/2, (int)tick_end.y, font_size, color);
+    DrawTextEx(font, buf, position, FONTSIZE, 0.0f, color);
   }
 
   tick_gap = ds.y_axis.ticks[1] - ds.y_axis.ticks[0];
@@ -113,7 +131,13 @@ Vector2 data_to_va_coords(Data_Space ds, View_Area va, Vector2 data_pt) {
 size_t calculateNiceTicks(float minVal, float maxVal, float* ticks) {
   size_t numTicks;
 
+  float range_margin = 1.02f;
   float range = maxVal - minVal;
+  float new_maxVal = minVal + range*range_margin;
+  float new_minVal = maxVal - range*range_margin;
+  maxVal = new_maxVal;
+  minVal = new_minVal;
+  range = maxVal - minVal;
   if (range == 0) {
     numTicks = 2;
     ticks[0] = minVal - 0.5f;
@@ -150,6 +174,11 @@ size_t calculateNiceTicks(float minVal, float maxVal, float* ticks) {
 
   // Clear up any excess at the end
   while (ticks[numTicks - 2] > maxVal) --numTicks;
+  while (ticks[numTicks - 1] < maxVal) {
+    ++numTicks;
+    assert(numTicks < MAXTICKS);
+    ticks[numTicks - 1] = ticks[numTicks - 2] + niceTickInterval;
+  }
 
   return numTicks;
 }
@@ -163,20 +192,20 @@ void get_maxmin(float *data_vec, size_t N, float *max, float *min) {
   }
 }
 
-Data_Space new_data_space(float *x_data, float*y_data, size_t N) {
+Data_Space new_data_space(dyn_array_float x_data, dyn_array_float y_data, size_t N) {
   float largest_x, largest_y;
   float smallest_x, smallest_y;
-  get_maxmin(x_data, N, &largest_x, &smallest_x);
-  get_maxmin(y_data, N, &largest_y, &smallest_y);
+  get_maxmin(x_data.vals, N, &largest_x, &smallest_x);
+  get_maxmin(y_data.vals, N, &largest_y, &smallest_y);
 
-  float* xticks = (float*)malloc(15 * sizeof(float)); // Maximum of 15 ticks
-  float* yticks = (float*)malloc(15 * sizeof(float)); // Maximum of 15 ticks
+  float* xticks = (float*)malloc(MAXTICKS * sizeof(float)); // Maximum of 15 ticks
+  float* yticks = (float*)malloc(MAXTICKS * sizeof(float)); // Maximum of 15 ticks
   size_t num_x_ticks = calculateNiceTicks(smallest_x, largest_x, xticks);
   size_t num_y_ticks = calculateNiceTicks(smallest_y, largest_y, yticks);
 
   return (Data_Space) {
-    .x_data = x_data,
-    .y_data = y_data,
+    .x_data = x_data.vals,
+    .y_data = y_data.vals,
     .N = N,
     .x_min = xticks[0],
     .y_min = yticks[0],
