@@ -17,7 +17,7 @@ size_t get_data(float* x_vec, float* y_vec, size_t N) {
   ph += 0.002f;
   for (size_t i=0; i<N; i++) {
     x_vec[i] = (float)i;
-    y_vec[i] = expf(-(float)i/50.0f) * sinf(2.0f*(22.0f/7.0f)*0.05f * (float)i + ph);
+    y_vec[i] = expf(-(float)i/50.0f) * sinf(2.0f*PI*0.05f * (float)i + ph);
   }
   return N;
 }
