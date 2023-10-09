@@ -6,8 +6,10 @@
 #include "data_space.h"
 #include "view_area.h"
 
+#define WINDOWTITLE "Data visualisation with a game engine"
 #define AXISCOLOR DARKGRAY
 #define DATACOLOR DARKBLUE
+#define MARKERSIZE 2
 #define MARGIN 5
 
 size_t get_data(float* x_vec, float* y_vec, size_t N) {
@@ -27,7 +29,7 @@ int main(void) {
   
   int window_width = 800;
   int window_height = 600;
-  InitWindow(window_width, window_height, "Plotting with a game engine");
+  InitWindow(window_width, window_height, WINDOWTITLE);
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   SetTargetFPS(60);
 
@@ -48,7 +50,7 @@ int main(void) {
     BeginDrawing();
       ClearBackground(WHITE);
       draw_axes(data_space, view_area, AXISCOLOR);
-      plot_data(data_space, view_area, 3.0f, DATACOLOR);
+      plot_data(data_space, view_area, MARKERSIZE, DATACOLOR);
     EndDrawing();
   }
 
