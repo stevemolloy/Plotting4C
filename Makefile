@@ -1,7 +1,8 @@
 CC = clang
 CFLAGS = -Wall -Werror -Wpedantic -Wconversion -std=c99 -ggdb
-CINCLUDES = -I/home/smolloy/Code/plotting_in_C/raylib/src -I/home/smolloy/Code/plotting_in_C/raylib/src/external
-CLIBS = -L/home/smolloy/Code/plotting_in_C/raylib/src -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -latomic
+#CINCLUDES = -I/home/smolloy/Code/plotting_in_C/raylib/src -I/home/smolloy/Code/plotting_in_C/raylib/src/external
+CINCLUDES = -I/home/smolloy/Code/plotting_in_C/raylib/src
+CLIBS = -L/home/smolloy/Code/plotting_in_C/raylib/src -lraylib -lm
 
 SRC = src
 OBJ = obj
@@ -16,7 +17,7 @@ all: $(BIN)
 
 $(BIN): $(OBJS)
 	@mkdir -p $(@D)
-	$(CC) $^ -o $@ $(CFLAGS) $(CINCLUDES) $(CLIBS)
+	$(CC) $^ -o $@ $(CLIBS)
 
 $(OBJ)/%.o: $(SRC)/%.c
 	@mkdir -p $(@D)
