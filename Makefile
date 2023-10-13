@@ -1,6 +1,5 @@
 CC = clang
 CFLAGS = -Wall -Werror -Wpedantic -Wconversion -std=c99 -ggdb
-#CINCLUDES = -I/home/smolloy/Code/plotting_in_C/raylib/src -I/home/smolloy/Code/plotting_in_C/raylib/src/external
 CINCLUDES = -I/home/smolloy/Code/plotting_in_C/raylib/src
 CLIBS = -L/home/smolloy/Code/plotting_in_C/raylib/src -lraylib -lm
 
@@ -13,11 +12,19 @@ OBJS = $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SRCS))
 BINDIR = bin
 BIN = $(BINDIR)/testing
 
-all: $(BIN)
+EXAMPLES = examples
+EXAMPLE_SRCS = $(wildcard $(EXAMPLES)/*.c)
+EXAMPLE_BINS = $(patsubst $(EXAMPLES)/%.c, $(BINDIR)/%, $(EXAMPLE_SRCS))
+
+all: $(BIN) $(EXAMPLE_BINS)
 
 $(BIN): $(OBJS)
 	@mkdir -p $(@D)
 	$(CC) $^ -o $@ $(CLIBS)
+
+$(BINDIR)/%: $(EXAMPLES)/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(CINCLUDES) $< -o $@ $(CLIBS)
 
 $(OBJ)/%.o: $(SRC)/%.c
 	@mkdir -p $(@D)
