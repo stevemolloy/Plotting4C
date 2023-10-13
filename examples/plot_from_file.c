@@ -17,12 +17,10 @@
 #define DATACOLOR DARKBLUE
 #define MARKERSIZE 2
 
-int main(void) {
-  // Open the file with the data
-  const char* filename = "examples/sine_data.csv";
-  int fd = open(filename, O_RDONLY);
+size_t load_two_column_csv(char *fname, dyn_array_float *xs, dyn_array_float *ys) {
+  int fd = open(fname, O_RDONLY);
   if (fd < 0) {
-    fprintf(stderr, "Could not read %s: %s\n", filename, strerror(errno));
+    fprintf(stderr, "Could not read %s: %s\n", fname, strerror(errno));
     return 1;
   }
 
@@ -30,7 +28,7 @@ int main(void) {
   struct stat filestats;
   int res = fstat(fd, &filestats);
   if (res != 0) {
-    fprintf(stderr, "Could not stat %s: %s\n", filename, strerror(errno));
+    fprintf(stderr, "Could not stat %s: %s\n", fname, strerror(errno));
     close(fd);
     return 1;
   }
@@ -40,7 +38,7 @@ int main(void) {
   // Map the file into writeable memory
   char *file_contents = mmap(NULL, file_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
   if (file_contents == MAP_FAILED) {
-    fprintf(stderr, "Could not mmap %s: %s\n", filename, strerror(errno));
+    fprintf(stderr, "Could not mmap %s: %s\n", fname, strerror(errno));
     return 1;
   }
 
@@ -53,8 +51,6 @@ int main(void) {
   }
   
   // Parse the file
-  dyn_array_float x_data = new_dyn_arr_float();
-  dyn_array_float y_data = new_dyn_arr_float();
   char *line = malloc(MAXLINELENGTH * sizeof(char));
   line = strtok(file_contents, "\n");
   while (line) {
@@ -63,13 +59,33 @@ int main(void) {
     if (processed != 2) {
       printf("Huh?\n");
     }
-    add_to_dyn_arr_float(&x_data, x);
-    add_to_dyn_arr_float(&y_data, y);
+    add_to_dyn_arr_float(xs, x);
+    add_to_dyn_arr_float(ys, y);
     line = strtok(NULL, "\n");
   }
 
+  munmap(file_contents, file_size);
+  free(line);
+  close(fd);
+
+  return N;
+}
+
+int main(void) {
+  // The file with the data
+  char* filename = "examples/sine_data.csv";
+
+  // Somewhere to store the data
+  dyn_array_float x_data = new_dyn_arr_float();
+  dyn_array_float y_data = new_dyn_arr_float();
+
+  // Fill the data stores
+  size_t N = load_two_column_csv(filename, &x_data, &y_data);
+
+  // Prepare the data space for plotting
   Data_Space data_space = new_data_space(x_data, y_data, N);
 
+  // The GUI
   int window_width = 800;
   int window_height = 600;
   InitWindow(window_width, window_height, WINDOWTITLE);
@@ -95,9 +111,6 @@ int main(void) {
     EndDrawing();
   }
 
-  close(fd);
-  free(line);
-  munmap(file_contents, file_size);
 
   return 0;
 }
