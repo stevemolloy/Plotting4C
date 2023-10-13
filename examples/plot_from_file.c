@@ -11,6 +11,11 @@
 
 #define MAXLINELENGTH 200
 #define MAXTOKLENGTH 100
+#define WINDOWTITLE "Data visualisation with a game engine"
+#define MARGIN 5
+#define AXISCOLOR DARKGRAY
+#define DATACOLOR DARKBLUE
+#define MARKERSIZE 2
 
 int main(void) {
   // Open the file with the data
@@ -39,17 +44,17 @@ int main(void) {
     return 1;
   }
 
-  // size_t line_count = 0;
-  // size_t chr_ind = 0;
-  // while (file_contents[chr_ind] != '\0') {
-  //   if (file_contents[chr_ind++] == '\n') {
-  //     line_count++;
-  //   }
-  // }
+  size_t N = 0;
+  size_t chr_ind = 0;
+  while (file_contents[chr_ind] != '\0') {
+    if (file_contents[chr_ind++] == '\n') {
+      N++;
+    }
+  }
   
   // Parse the file
-  dyn_array_float xs = new_dyn_arr_float();
-  dyn_array_float ys = new_dyn_arr_float();
+  dyn_array_float x_data = new_dyn_arr_float();
+  dyn_array_float y_data = new_dyn_arr_float();
   char *line = malloc(MAXLINELENGTH * sizeof(char));
   line = strtok(file_contents, "\n");
   while (line) {
@@ -58,9 +63,36 @@ int main(void) {
     if (processed != 2) {
       printf("Huh?\n");
     }
-    add_to_dyn_arr_float(&xs, x);
-    add_to_dyn_arr_float(&ys, y);
+    add_to_dyn_arr_float(&x_data, x);
+    add_to_dyn_arr_float(&y_data, y);
     line = strtok(NULL, "\n");
+  }
+
+  Data_Space data_space = new_data_space(x_data, y_data, N);
+
+  int window_width = 800;
+  int window_height = 600;
+  InitWindow(window_width, window_height, WINDOWTITLE);
+  SetWindowState(FLAG_WINDOW_RESIZABLE);
+  SetTargetFPS(10);
+
+  View_Area view_area;
+  while (!WindowShouldClose()) {
+    window_width = GetScreenWidth();
+    window_height = GetScreenHeight();
+
+    view_area = (View_Area){
+      .x = 0.0f + MARGIN,
+      .y = 0.0f + MARGIN,
+      .width = (float)window_width - 2.0f * MARGIN,
+      .height = (float)window_height - 2.0f * MARGIN,
+    };
+
+    BeginDrawing();
+      ClearBackground(WHITE);
+      draw_axes(data_space, view_area, AXISCOLOR);
+      plot_data(data_space, view_area, MARKERSIZE, DATACOLOR);
+    EndDrawing();
   }
 
   close(fd);
