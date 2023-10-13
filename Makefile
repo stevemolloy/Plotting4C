@@ -1,32 +1,37 @@
 CC = clang
 CFLAGS = -Wall -Werror -Wpedantic -Wconversion -std=c99 -ggdb
-CINCLUDES = -I/home/smolloy/Code/plotting_in_C/raylib/src
+CINCLUDES = -I/home/smolloy/Code/plotting_in_C/raylib/src -I/home/smolloy/Code/plotting_in_C/src
 CLIBS = -L/home/smolloy/Code/plotting_in_C/raylib/src -lraylib -lm
 
 SRC = src
 OBJ = obj
-
-SRCS = $(wildcard $(SRC)/*.c)
-OBJS = $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SRCS))
-
-BINDIR = bin
-BIN = $(BINDIR)/testing
-
 EXAMPLES = examples
+BINDIR = bin
+
+# List of example source files
 EXAMPLE_SRCS = $(wildcard $(EXAMPLES)/*.c)
+
+# List of example executables
 EXAMPLE_BINS = $(patsubst $(EXAMPLES)/%.c, $(BINDIR)/%, $(EXAMPLE_SRCS))
 
-all: $(BIN) $(EXAMPLE_BINS)
+# List of object files from the src directory
+MAIN_SRCS = $(wildcard $(SRC)/*.c)
+MAIN_OBJS = $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(MAIN_SRCS))
 
-$(BIN): $(OBJS)
-	@mkdir -p $(@D)
-	$(CC) $^ -o $@ $(CLIBS)
+# List of all object files to link
+OBJS = $(MAIN_OBJS)
 
-$(BINDIR)/%: $(EXAMPLES)/%.c
+all: $(EXAMPLE_BINS)
+
+$(BINDIR)/%: $(EXAMPLES)/%.c $(MAIN_OBJS)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) $(CINCLUDES) $< -o $@ $(CLIBS)
+	$(CC) $(CFLAGS) $(CINCLUDES) $^ -o $@ $(CLIBS)
 
 $(OBJ)/%.o: $(SRC)/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(CINCLUDES) -c $< -o $@
+
+$(OBJ)/%.o: $(EXAMPLES)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CINCLUDES) -c $< -o $@
 
