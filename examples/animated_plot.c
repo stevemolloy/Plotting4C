@@ -39,7 +39,8 @@ int main(void) {
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   SetTargetFPS(60);
 
-  Data_Space data_space;
+  N = get_data(&x_data, &y_data);
+  Data_Space data_space = new_data_space(x_data, y_data, N);
   Rectangle zoom_rect = (Rectangle){
     .x = data_space.x_axis.ticks[0],
     .y = data_space.y_axis.ticks[0],
@@ -58,14 +59,14 @@ int main(void) {
       .height = (float)window_height - 2.0f * MARGIN,
     };
 
-    N = get_data(&x_data, &y_data);
-    data_space = new_data_space(x_data, y_data, N);
-
     BeginDrawing();
       ClearBackground(WHITE);
       draw_axes(data_space, zoom_rect, view_area, AXISCOLOR);
       plot_data(data_space, zoom_rect, view_area, MARKERSIZE, DATACOLOR);
     EndDrawing();
+
+    N = get_data(&x_data, &y_data);
+    data_space = new_data_space(x_data, y_data, N);
   }
 
   free(x_data.vals);
