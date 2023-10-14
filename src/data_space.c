@@ -37,11 +37,11 @@ int add_to_dyn_arr_float(dyn_array_float *in, float data) {
   return 0;
 }
 
-void plot_data(Data_Space ds, View_Area va, float marker_size, Color color) {
+void plot_data(Data_Space ds, Rectangle zoom_rect, View_Area va, float marker_size, Color color) {
   Vector2 pts[ds.N];
   for (size_t i=0; i<ds.N; i++) {
     Vector2 pt = (Vector2){ds.x_data[i], ds.y_data[i]};
-    Vector2 pt_in_va = data_to_va_coords(ds, va, pt);
+    Vector2 pt_in_va = data_to_va_coords(zoom_rect, va, pt);
     pts[i] = va_to_window_coords(va, pt_in_va);
 
     DrawCircleV(pts[i], marker_size, color);
@@ -49,7 +49,7 @@ void plot_data(Data_Space ds, View_Area va, float marker_size, Color color) {
   DrawLineStrip(pts, (int)ds.N, color);
 }
 
-void draw_axes(Data_Space ds, View_Area va, Color color) {
+void draw_axes(Data_Space ds, Rectangle zoom_rect, View_Area va, Color color) {
   static bool font_loaded = false;
   static Font font;
   if (!font_loaded) {
@@ -65,10 +65,10 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
   Vector2 y_startPos = (Vector2) { 0.0f, ds.y_axis.ticks[0] };
   Vector2 y_endPos = (Vector2) { 0.0f, ds.y_axis.ticks[num_y_ticks - 1] };
 
-  Vector2 x_start_va = data_to_va_coords(ds, va, x_startPos);
-  Vector2 y_start_va = data_to_va_coords(ds, va, y_startPos);
-  Vector2 x_end_va   = data_to_va_coords(ds, va, x_endPos);
-  Vector2 y_end_va   = data_to_va_coords(ds, va, y_endPos);
+  Vector2 x_start_va = data_to_va_coords(zoom_rect, va, x_startPos);
+  Vector2 y_start_va = data_to_va_coords(zoom_rect, va, y_startPos);
+  Vector2 x_end_va   = data_to_va_coords(zoom_rect, va, x_endPos);
+  Vector2 y_end_va   = data_to_va_coords(zoom_rect, va, y_endPos);
 
   Vector2 x_start_win = va_to_window_coords(va, x_start_va);
   Vector2 y_start_win = va_to_window_coords(va, y_start_va);
@@ -84,7 +84,7 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
       continue;
     }
     Vector2 tick_in_ds = (Vector2){ds.x_axis.ticks[i], 0.0f};
-    Vector2 tick_in_va = data_to_va_coords(ds, va, tick_in_ds);
+    Vector2 tick_in_va = data_to_va_coords(zoom_rect, va, tick_in_ds);
     Vector2 tick_start = va_to_window_coords(va, tick_in_va);
     Vector2 tick_end = {
       .x = tick_start.x,
@@ -104,7 +104,7 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
       continue;
     }
     Vector2 tick_in_ds = (Vector2){0.0f, ds.y_axis.ticks[i]};
-    Vector2 tick_in_va = data_to_va_coords(ds, va, tick_in_ds);
+    Vector2 tick_in_va = data_to_va_coords(zoom_rect, va, tick_in_ds);
     Vector2 tick_start = va_to_window_coords(va, tick_in_va);
     Vector2 tick_end = {
       .x = tick_start.x + va.height/100,
@@ -119,13 +119,33 @@ void draw_axes(Data_Space ds, View_Area va, Color color) {
   }
 }
 
-Vector2 data_to_va_coords(Data_Space ds, View_Area va, Vector2 data_pt) {
+Vector2 va_to_data_coords(Rectangle zoom_rect, View_Area va, Vector2 data_pt) {
   float W_x = va.width;
   float W_y = va.height;
-  float x_range = ds.x_range;
-  float y_range = ds.y_range;
-  float x_min = ds.x_min;
-  float y_min = ds.y_min;
+  float x_range = zoom_rect.width;
+  float y_range = zoom_rect.height;
+  float x_min = zoom_rect.x;
+  float y_min = zoom_rect.y;
+
+  float A_x = W_x / x_range;
+  float A_y = W_y / y_range;
+
+  float B_x = -W_x * x_min / x_range;
+  float B_y = -W_y * y_min / y_range;
+
+  return (Vector2) {
+    (data_pt.x - B_x) / A_x,
+    (va.height - data_pt.y - B_y) / A_y,
+  };
+}
+
+Vector2 data_to_va_coords(Rectangle zoom_rect, View_Area va, Vector2 data_pt) {
+  float W_x = va.width;
+  float W_y = va.height;
+  float x_range = zoom_rect.width;
+  float y_range = zoom_rect.height;
+  float x_min = zoom_rect.x;
+  float y_min = zoom_rect.y;
 
   float A_x = W_x / x_range;
   float A_y = W_y / y_range;
@@ -139,7 +159,7 @@ Vector2 data_to_va_coords(Data_Space ds, View_Area va, Vector2 data_pt) {
 size_t calculateNiceTicks(float minVal, float maxVal, float* ticks) {
   size_t numTicks;
 
-  float range_margin = 1.02f;
+  float range_margin = 1.0f;//2f;
   float range = maxVal - minVal;
   float new_maxVal = minVal + range*range_margin;
   float new_minVal = maxVal - range*range_margin;
@@ -215,10 +235,6 @@ Data_Space new_data_space(dyn_array_float x_data, dyn_array_float y_data, size_t
     .x_data = x_data.vals,
     .y_data = y_data.vals,
     .N = N,
-    .x_min = xticks[0],
-    .y_min = yticks[0],
-    .x_range = xticks[num_x_ticks - 1] - xticks[0],
-    .y_range = yticks[num_y_ticks - 1] - yticks[0],
     .x_axis = (Axis){ xticks, num_x_ticks },
     .y_axis = (Axis){ yticks, num_y_ticks },
   };

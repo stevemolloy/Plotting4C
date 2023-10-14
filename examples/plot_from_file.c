@@ -84,6 +84,13 @@ int main(void) {
 
   // Prepare the data space for plotting
   Data_Space data_space = new_data_space(x_data, y_data, N);
+  Rectangle zoom_rect = (Rectangle){
+    .x = data_space.x_axis.ticks[0],
+    .y = data_space.y_axis.ticks[0],
+    .width = data_space.x_axis.ticks[data_space.x_axis.num_ticks - 1] - data_space.x_axis.ticks[0],
+    .height = data_space.y_axis.ticks[data_space.y_axis.num_ticks - 1] - data_space.y_axis.ticks[0],
+  };
+  Rectangle zoom_rect_view = {0};
 
   // The GUI
   int window_width = 800;
@@ -92,7 +99,6 @@ int main(void) {
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   SetTargetFPS(60);
   bool drawing_zoom = false;
-  Rectangle zoom_rect = {0};
   Vector2 zoom_start_pos = {0};
 
   View_Area view_area;
@@ -109,8 +115,8 @@ int main(void) {
 
     BeginDrawing();
       ClearBackground(WHITE);
-      draw_axes(data_space, view_area, AXISCOLOR);
-      plot_data(data_space, view_area, MARKERSIZE, DATACOLOR);
+      draw_axes(data_space, zoom_rect, view_area, AXISCOLOR);
+      plot_data(data_space, zoom_rect, view_area, MARKERSIZE, DATACOLOR);
 
       if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         Vector2 mouse_pos = GetMousePosition();
@@ -119,7 +125,7 @@ int main(void) {
             zoom_start_pos = mouse_pos;
             TraceLog(LOG_INFO, "Drawing zoom");
             drawing_zoom = true;
-            zoom_rect = (Rectangle) {
+            zoom_rect_view = (Rectangle) {
               .x = zoom_start_pos.x,
               .y = zoom_start_pos.y,
               .width = 0.0f,
@@ -127,25 +133,55 @@ int main(void) {
             };
           }
           if (mouse_pos.x < zoom_start_pos.x) {
-            zoom_rect.x = mouse_pos.x;
-            zoom_rect.width = zoom_start_pos.x - mouse_pos.x;
+            zoom_rect_view.x = mouse_pos.x;
+            zoom_rect_view.width = zoom_start_pos.x - mouse_pos.x;
           } else {
-            zoom_rect.x = zoom_start_pos.x;
-            zoom_rect.width = mouse_pos.x - zoom_start_pos.x;
+            zoom_rect_view.x = zoom_start_pos.x;
+            zoom_rect_view.width = mouse_pos.x - zoom_start_pos.x;
           }
           if (mouse_pos.y < zoom_start_pos.y) {
-            zoom_rect.y = mouse_pos.y;
-            zoom_rect.height = zoom_start_pos.y - mouse_pos.y;
+            zoom_rect_view.y = mouse_pos.y;
+            zoom_rect_view.height = zoom_start_pos.y - mouse_pos.y;
           } else {
-            zoom_rect.y = zoom_start_pos.y;
-            zoom_rect.height = mouse_pos.y - zoom_start_pos.y;
+            zoom_rect_view.y = zoom_start_pos.y;
+            zoom_rect_view.height = mouse_pos.y - zoom_start_pos.y;
           }
         }
-        DrawRectangleLinesEx(zoom_rect, 2.0f, BLACK);
+        DrawRectangleLinesEx(zoom_rect_view, 2.0f, BLACK);
       }
       if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) & drawing_zoom) {
         drawing_zoom = false;
+        Vector2 zoom_rect_topleft_window = (Vector2) {
+          zoom_rect_view.x,
+          zoom_rect_view.y,
+        };
+        Vector2 zoom_rect_bottomright_window = (Vector2) {
+          zoom_rect_view.x + zoom_rect_view.width,
+          zoom_rect_view.y + zoom_rect_view.height,
+        };
+        
+        Vector2 zoom_rect_topleft_va = window_to_va_coords(view_area, zoom_rect_topleft_window);
+        Vector2 zoom_rect_bottomright_va = window_to_va_coords(view_area, zoom_rect_bottomright_window);
+
+        Vector2 zoom_rect_topleft_data = va_to_data_coords(zoom_rect, view_area, zoom_rect_topleft_va);
+        Vector2 zoom_rect_bottomright_data = va_to_data_coords(zoom_rect, view_area, zoom_rect_bottomright_va);
+
+        zoom_rect = (Rectangle) {
+          .x = zoom_rect_topleft_data.x,
+          .y = zoom_rect_bottomright_data.y,
+          .width = zoom_rect_bottomright_data.x - zoom_rect_topleft_data.x,
+          .height = zoom_rect_topleft_data.y - zoom_rect_bottomright_data.y,
+        };
         TraceLog(LOG_INFO, "Zoom!");
+      }
+      if (IsKeyPressed(KEY_R)) {
+        zoom_rect = (Rectangle){
+          .x = data_space.x_axis.ticks[0],
+          .y = data_space.y_axis.ticks[0],
+          .width = data_space.x_axis.ticks[data_space.x_axis.num_ticks - 1] - data_space.x_axis.ticks[0],
+          .height = data_space.y_axis.ticks[data_space.y_axis.num_ticks - 1] - data_space.y_axis.ticks[0],
+        };
+        TraceLog(LOG_INFO, "Recreating data_space from the input data");
       }
     EndDrawing();
   }

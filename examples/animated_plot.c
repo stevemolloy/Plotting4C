@@ -40,6 +40,12 @@ int main(void) {
   SetTargetFPS(60);
 
   Data_Space data_space;
+  Rectangle zoom_rect = (Rectangle){
+    .x = data_space.x_axis.ticks[0],
+    .y = data_space.y_axis.ticks[0],
+    .width = data_space.x_axis.ticks[data_space.x_axis.num_ticks - 1] - data_space.x_axis.ticks[0],
+    .height = data_space.y_axis.ticks[data_space.y_axis.num_ticks - 1] - data_space.y_axis.ticks[0],
+  };
   View_Area view_area;
   while (!WindowShouldClose()) {
     window_width = GetScreenWidth();
@@ -57,8 +63,8 @@ int main(void) {
 
     BeginDrawing();
       ClearBackground(WHITE);
-      draw_axes(data_space, view_area, AXISCOLOR);
-      plot_data(data_space, view_area, MARKERSIZE, DATACOLOR);
+      draw_axes(data_space, zoom_rect, view_area, AXISCOLOR);
+      plot_data(data_space, zoom_rect, view_area, MARKERSIZE, DATACOLOR);
     EndDrawing();
   }
 
