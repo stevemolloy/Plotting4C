@@ -90,7 +90,10 @@ int main(void) {
   int window_height = 600;
   InitWindow(window_width, window_height, WINDOWTITLE);
   SetWindowState(FLAG_WINDOW_RESIZABLE);
-  SetTargetFPS(10);
+  SetTargetFPS(60);
+  bool drawing_zoom = false;
+  Rectangle zoom_rect = {0};
+  Vector2 zoom_start_pos = {0};
 
   View_Area view_area;
   while (!WindowShouldClose()) {
@@ -108,6 +111,42 @@ int main(void) {
       ClearBackground(WHITE);
       draw_axes(data_space, view_area, AXISCOLOR);
       plot_data(data_space, view_area, MARKERSIZE, DATACOLOR);
+
+      if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        Vector2 mouse_pos = GetMousePosition();
+        if (CheckCollisionPointRec(mouse_pos, view_area)) {
+          if (!drawing_zoom) {
+            zoom_start_pos = mouse_pos;
+            TraceLog(LOG_INFO, "Drawing zoom");
+            drawing_zoom = true;
+            zoom_rect = (Rectangle) {
+              .x = zoom_start_pos.x,
+              .y = zoom_start_pos.y,
+              .width = 0.0f,
+              .height = 0.0f,
+            };
+          }
+          if (mouse_pos.x < zoom_start_pos.x) {
+            zoom_rect.x = mouse_pos.x;
+            zoom_rect.width = zoom_start_pos.x - mouse_pos.x;
+          } else {
+            zoom_rect.x = zoom_start_pos.x;
+            zoom_rect.width = mouse_pos.x - zoom_start_pos.x;
+          }
+          if (mouse_pos.y < zoom_start_pos.y) {
+            zoom_rect.y = mouse_pos.y;
+            zoom_rect.height = zoom_start_pos.y - mouse_pos.y;
+          } else {
+            zoom_rect.y = zoom_start_pos.y;
+            zoom_rect.height = mouse_pos.y - zoom_start_pos.y;
+          }
+        }
+        DrawRectangleLinesEx(zoom_rect, 2.0f, BLACK);
+      }
+      if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) & drawing_zoom) {
+        drawing_zoom = false;
+        TraceLog(LOG_INFO, "Zoom!");
+      }
     EndDrawing();
   }
 
