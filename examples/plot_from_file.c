@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <raylib.h>
+#include <raymath.h>
 
 #include <data_space.h>
 
@@ -99,7 +101,9 @@ int main(void) {
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   SetTargetFPS(60);
   bool drawing_zoom = false;
+  bool dragging_plot = false;
   Vector2 zoom_start_pos = {0};
+  Vector2 dragging_start_pos  ={0};
 
   View_Area view_area;
   while (!WindowShouldClose()) {
@@ -119,6 +123,26 @@ int main(void) {
       plot_data(data_space, zoom_rect, view_area, MARKERSIZE, DATACOLOR);
 
       if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        Vector2 mouse_pos = GetMousePosition();
+        if (CheckCollisionPointRec(mouse_pos, view_area)) {
+          if (!dragging_plot) {
+        // Vector2 zoom_rect_topleft_data = va_to_data_coords(zoom_rect, view_area, zoom_rect_topleft_va);
+            dragging_start_pos = va_to_data_coords(zoom_rect, view_area, window_to_va_coords(view_area, mouse_pos));
+            TraceLog(LOG_INFO, "Starting to drag the plot");
+            dragging_plot = true;
+          }
+          Vector2 dragging_end_pos = va_to_data_coords(zoom_rect, view_area, window_to_va_coords(view_area, mouse_pos));
+          Vector2 diff = Vector2Subtract(dragging_end_pos, dragging_start_pos);
+          zoom_rect.x -= diff.x;
+          zoom_rect.y -= diff.y;
+        }
+      }
+      if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) & dragging_plot) {
+        dragging_plot = false;
+        TraceLog(LOG_INFO, "Dragging operation finished");
+      }
+
+      if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
         Vector2 mouse_pos = GetMousePosition();
         if (CheckCollisionPointRec(mouse_pos, view_area)) {
           if (!drawing_zoom) {
@@ -149,7 +173,7 @@ int main(void) {
         }
         DrawRectangleLinesEx(zoom_rect_view, 2.0f, BLACK);
       }
-      if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) & drawing_zoom) {
+      if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT) & drawing_zoom) {
         drawing_zoom = false;
         Vector2 zoom_rect_topleft_window = (Vector2) {
           zoom_rect_view.x,
@@ -172,7 +196,7 @@ int main(void) {
           .width = zoom_rect_bottomright_data.x - zoom_rect_topleft_data.x,
           .height = zoom_rect_topleft_data.y - zoom_rect_bottomright_data.y,
         };
-        TraceLog(LOG_INFO, "Zoom!");
+        TraceLog(LOG_INFO, "Applying zoom");
       }
       if (IsKeyPressed(KEY_R)) {
         zoom_rect = (Rectangle){
