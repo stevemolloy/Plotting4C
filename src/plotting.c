@@ -9,7 +9,7 @@ void drag_plot(Rectangle *zr, View_Area va) {
   static bool dragging_plot = false;
   static Vector2 dragging_start_pos;
 
-  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+  if (IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
     Vector2 mouse_pos = GetMousePosition();
     if (CheckCollisionPointRec(mouse_pos, va)) {
       if (!dragging_plot) {
@@ -34,7 +34,7 @@ void zoom_plot(Rectangle *zr, View_Area va) {
   static Rectangle zoom_rect_view = {0};
   static Vector2 zoom_start_pos = {0};
 
-  if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+  if (!IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
     Vector2 mouse_pos = GetMousePosition();
     if (CheckCollisionPointRec(mouse_pos, va)) {
       if (!drawing_zoom) {
@@ -65,7 +65,7 @@ void zoom_plot(Rectangle *zr, View_Area va) {
     }
     DrawRectangleLinesEx(zoom_rect_view, 2.0f, BLACK);
   }
-  if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT) & drawing_zoom) {
+  if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) & drawing_zoom) {
     drawing_zoom = false;
     Vector2 zoom_rect_topleft_window = (Vector2) {
       zoom_rect_view.x,
