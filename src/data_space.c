@@ -12,6 +12,60 @@
 #define MAXTICKS 20
 #define INIT_DATA_SIZE 1024
 
+size_t load_two_column_csv(char *fname, dyn_array_float *xs, dyn_array_float *ys) {
+  int fd = open(fname, O_RDONLY);
+  if (fd < 0) {
+    fprintf(stderr, "Could not read %s: %s\n", fname, strerror(errno));
+    return 1;
+  }
+
+  // Figure out the size of the file
+  struct stat filestats;
+  int res = fstat(fd, &filestats);
+  if (res != 0) {
+    fprintf(stderr, "Could not stat %s: %s\n", fname, strerror(errno));
+    close(fd);
+    return 1;
+  }
+
+  size_t file_size = (size_t)filestats.st_size;
+
+  // Map the file into writeable memory
+  char *file_contents = mmap(NULL, file_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
+  if (file_contents == MAP_FAILED) {
+    fprintf(stderr, "Could not mmap %s: %s\n", fname, strerror(errno));
+    return 1;
+  }
+
+  size_t N = 0;
+  size_t chr_ind = 0;
+  while (file_contents[chr_ind] != '\0') {
+    if (file_contents[chr_ind++] == '\n') {
+      N++;
+    }
+  }
+  
+  // Parse the file
+  char *line = malloc(MAXLINELENGTH * sizeof(char));
+  line = strtok(file_contents, "\n");
+  while (line) {
+    float x, y;
+    int processed = sscanf(line, "%f, %f", &x, &y);
+    if (processed != 2) {
+      printf("Huh?\n");
+    }
+    add_to_dyn_arr_float(xs, x);
+    add_to_dyn_arr_float(ys, y);
+    line = strtok(NULL, "\n");
+  }
+
+  munmap(file_contents, file_size);
+  free(line);
+  close(fd);
+
+  return N;
+}
+
 dyn_array_float new_dyn_arr_float(void) {
   return (dyn_array_float) {
     .vals = malloc(INIT_DATA_SIZE * sizeof(float)),

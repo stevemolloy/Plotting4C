@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -Wall -Werror -Wpedantic -Wconversion -std=c99 -ggdb
+CFLAGS = -Wall -Werror -Wpedantic -Wconversion -std=c11 -ggdb
 CINCLUDES = -I/home/smolloy/Code/plotting_in_C/raylib/src -I/home/smolloy/Code/plotting_in_C/src
 CLIBS = -L/home/smolloy/Code/plotting_in_C/raylib/src -lraylib -lm
 
