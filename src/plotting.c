@@ -82,13 +82,17 @@ void activate_box_zoom(Rectangle *zr, View_Area va) {
     Vector2 zoom_rect_topleft_data = va_to_data_coords(*zr, va, zoom_rect_topleft_va);
     Vector2 zoom_rect_bottomright_data = va_to_data_coords(*zr, va, zoom_rect_bottomright_va);
 
-    *zr = (Rectangle) {
-      .x = zoom_rect_topleft_data.x,
-      .y = zoom_rect_bottomright_data.y,
-      .width = zoom_rect_bottomright_data.x - zoom_rect_topleft_data.x,
-      .height = zoom_rect_topleft_data.y - zoom_rect_bottomright_data.y,
-    };
-    TraceLog(LOG_INFO, "Applying zoom");
+    if (zoom_rect_view.width/zr->width > 0.001f & zoom_rect_view.height/zr->width > 0.001f) {
+      *zr = (Rectangle) {
+        .x = zoom_rect_topleft_data.x,
+        .y = zoom_rect_bottomright_data.y,
+        .width = zoom_rect_bottomright_data.x - zoom_rect_topleft_data.x,
+        .height = zoom_rect_topleft_data.y - zoom_rect_bottomright_data.y,
+      };
+      TraceLog(LOG_INFO, "Applying zoom");
+    } else {
+      TraceLog(LOG_INFO, "Zoom too small. Not applying");
+    }
   }
  }
 
