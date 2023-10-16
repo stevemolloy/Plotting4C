@@ -58,8 +58,8 @@ int main(void) {
       draw_axes(data_space, zoom_rect, view_area, AXISCOLOR);
       plot_data(data_space, zoom_rect, view_area, MARKERSIZE, DATACOLOR);
 
-      drag_plot(&zoom_rect, view_area);
-      zoom_plot(&zoom_rect, view_area);
+      activate_plot_dragging(&zoom_rect, view_area);
+      activate_box_zoom(&zoom_rect, view_area);
 
       float wheel_move =  GetMouseWheelMove();
       if (wheel_move > 0.0f) {

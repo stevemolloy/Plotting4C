@@ -5,7 +5,7 @@
 #include "view_area.h"
 #include "plotting.h"
 
-void drag_plot(Rectangle *zr, View_Area va) {
+void activate_plot_dragging(Rectangle *zr, View_Area va) {
   static bool dragging_plot = false;
   static Vector2 dragging_start_pos;
 
@@ -29,7 +29,7 @@ void drag_plot(Rectangle *zr, View_Area va) {
   }
 }
 
-void zoom_plot(Rectangle *zr, View_Area va) {
+void activate_box_zoom(Rectangle *zr, View_Area va) {
   static bool drawing_zoom = false;
   static Rectangle zoom_rect_view = {0};
   static Vector2 zoom_start_pos = {0};
