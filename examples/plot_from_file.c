@@ -10,7 +10,6 @@
 #define AXISCOLOR DARKGRAY
 #define DATACOLOR DARKBLUE
 #define MARKERSIZE 2
-#define ZOOMFACTOR 1.05f
 
 int main(void) {
   // The file with the data
@@ -60,25 +59,7 @@ int main(void) {
 
       activate_plot_dragging(&zoom_rect, view_area);
       activate_box_zoom(&zoom_rect, view_area);
-
-      float wheel_move =  GetMouseWheelMove();
-      if (wheel_move > 0.0f) {
-        Vector2 zoom_center = va_to_data_coords(zoom_rect, view_area, window_to_va_coords(view_area, GetMousePosition()));
-        Vector2 diff = Vector2Subtract((Vector2){zoom_rect.x, zoom_rect.y}, zoom_center);
-        Vector2 scaled =  Vector2Scale(diff, 1/ZOOMFACTOR);
-        zoom_rect.x = scaled.x + zoom_center.x;
-        zoom_rect.y = scaled.y + zoom_center.y;
-        zoom_rect.width *= 1/ZOOMFACTOR;
-        zoom_rect.height *= 1/ZOOMFACTOR;
-      } else if (wheel_move < 0.0f) {
-        Vector2 zoom_center = va_to_data_coords(zoom_rect, view_area, window_to_va_coords(view_area, GetMousePosition()));
-        Vector2 diff = Vector2Subtract((Vector2){zoom_rect.x, zoom_rect.y}, zoom_center);
-        Vector2 scaled =  Vector2Scale(diff, ZOOMFACTOR);
-        zoom_rect.x = scaled.x + zoom_center.x;
-        zoom_rect.y = scaled.y + zoom_center.y;
-        zoom_rect.width *= ZOOMFACTOR;
-        zoom_rect.height *= ZOOMFACTOR;
-      }
+      activate_scroll_zoom(&zoom_rect, view_area);
 
       if (IsKeyPressed(KEY_R)) {
         zoom_rect = (Rectangle){

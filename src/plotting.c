@@ -5,6 +5,29 @@
 #include "view_area.h"
 #include "plotting.h"
 
+#define ZOOMFACTOR 1.10f
+
+void activate_scroll_zoom(Rectangle *zr, View_Area va) {
+  float wheel_move =  GetMouseWheelMove();
+  if (wheel_move > 0.0f) {
+    Vector2 zoom_center = va_to_data_coords(*zr, va, window_to_va_coords(va, GetMousePosition()));
+    Vector2 diff = Vector2Subtract((Vector2){zr->x, zr->y}, zoom_center);
+    Vector2 scaled =  Vector2Scale(diff, 1/ZOOMFACTOR);
+    zr->x = scaled.x + zoom_center.x;
+    zr->y = scaled.y + zoom_center.y;
+    zr->width *= 1/ZOOMFACTOR;
+    zr->height *= 1/ZOOMFACTOR;
+  } else if (wheel_move < 0.0f) {
+    Vector2 zoom_center = va_to_data_coords(*zr, va, window_to_va_coords(va, GetMousePosition()));
+    Vector2 diff = Vector2Subtract((Vector2){zr->x, zr->y}, zoom_center);
+    Vector2 scaled =  Vector2Scale(diff, ZOOMFACTOR);
+    zr->x = scaled.x + zoom_center.x;
+    zr->y = scaled.y + zoom_center.y;
+    zr->width *= ZOOMFACTOR;
+    zr->height *= ZOOMFACTOR;
+  }
+}
+
 void activate_plot_dragging(Rectangle *zr, View_Area va) {
   static bool dragging_plot = false;
   static Vector2 dragging_start_pos;

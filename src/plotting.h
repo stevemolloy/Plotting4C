@@ -2,6 +2,7 @@
 
 #include "view_area.h"
 
+void activate_scroll_zoom(Rectangle*, View_Area);
 void activate_plot_dragging(Rectangle*, View_Area);
 void activate_box_zoom(Rectangle*, View_Area);
 
